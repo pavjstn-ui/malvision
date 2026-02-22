@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MalVision — Threat Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #080b0f;
+    --bg2:       #0d1117;
+    --bg3:       #111820;
+    --border:    #1e2d3d;
+    --text:      #a8b8c8;
+    --text-dim:  #4a5a6a;
+    --text-bright: #d0e0f0;
+    --mono:      'Share Tech Mono', monospace;
+    --sans:      'Barlow', sans-serif;
+    --critical:  #ff3b3b;
+    --high:      #ff8c00;
+    --medium:    #f0c040;
+    --low:       #4caf88;
+    --accent:    #00aaff;
+    --scan-line: rgba(0,170,255,0.03);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      var(--scan-line) 0px,
+      var(--scan-line) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ── Header ─────────────────────────────────── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .logo-name {
+    font-family: var(--mono);
+    font-size: 22px;
+    color: var(--text-bright);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .logo-tag {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--low);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .live-dot.alert {
+    background: var(--critical);
+    animation: pulse-fast 0.6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  @keyframes pulse-fast {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--critical); }
+    50% { opacity: 0.5; box-shadow: none; }
+  }
+
+  #clock {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── Status bar ──────────────────────────────── */
+  #status-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-cell {
+    padding: 20px 32px;
+    border-right: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-cell:last-child { border-right: none; }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    font-family: var(--mono);
+  }
+
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 36px;
+    color: var(--text-bright);
+    line-height: 1;
+    transition: color 0.3s;
+  }
+
+  .stat-value.critical { color: var(--critical); text-shadow: 0 0 20px rgba(255,59,59,0.4); }
+  .stat-value.warning  { color: var(--high); }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  /* ── Main grid ───────────────────────────────── */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 0;
+    min-height: calc(100vh - 140px);
+  }
+
+  /* ── Alert feed ──────────────────────────────── */
+  .panel {
+    border-right: 1px solid var(--border);
+  }
+
+  .panel-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg2);
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .panel-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  #alert-feed {
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+  }
+
+  .alert-item {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 3px 1fr;
+    gap: 16px;
+    animation: slide-in 0.3s ease;
+    cursor: default;
+    transition: background 0.15s;
+  }
+
+  .alert-item:hover { background: var(--bg3); }
+
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .alert-bar {
+    border-radius: 2px;
+    align-self: stretch;
+  }
+
+  .alert-bar.CRITICAL { background: var(--critical); box-shadow: 0 0 8px rgba(255,59,59,0.5); }
+  .alert-bar.HIGH     { background: var(--high); }
+  .alert-bar.MEDIUM   { background: var(--medium); }
+  .alert-bar.WARNING  { background: var(--high); }
+  .alert-bar.LOW      { background: var(--low); }
+
+  .alert-body {}
+
+  .alert-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .alert-level {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+
+  .alert-level.CRITICAL { background: rgba(255,59,59,0.15); color: var(--critical); border: 1px solid rgba(255,59,59,0.3); }
+  .alert-level.HIGH     { background: rgba(255,140,0,0.15);  color: var(--high);     border: 1px solid rgba(255,140,0,0.3); }
+  .alert-level.MEDIUM   { background: rgba(240,192,64,0.15); color: var(--medium);   border: 1px solid rgba(240,192,64,0.3); }
+  .alert-level.WARNING  { background: rgba(255,140,0,0.15);  color: var(--high);     border: 1px solid rgba(255,140,0,0.3); }
+  .alert-level.LOW      { background: rgba(76,175,136,0.15); color: var(--low);      border: 1px solid rgba(76,175,136,0.3); }
+
+  .alert-type {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-bright);
+    letter-spacing: 0.5px;
+  }
+
+  .alert-host {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-left: auto;
+  }
+
+  .alert-reason {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+
+  .alert-meta {
+    display: flex;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .alert-score {
+    color: var(--text-dim);
+  }
+
+  .empty-state {
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .empty-state .empty-icon {
+    font-size: 32px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  /* ── Sidebar ─────────────────────────────────── */
+  aside {
+    background: var(--bg2);
+  }
+
+  .host-list {
+    overflow-y: auto;
+  }
+
+  .host-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .host-item:hover { background: var(--bg3); }
+
+  .host-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .host-score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .score-bar-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease, background 0.3s;
+  }
+
+  .score-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    width: 30px;
+    text-align: right;
+  }
+
+  .host-events {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .event-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: var(--bg3);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    letter-spacing: 0.5px;
+  }
+
+  .host-status-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+
+  .host-status-badge.alerted  { background: rgba(255,59,59,0.1); color: var(--critical); border: 1px solid rgba(255,59,59,0.2); }
+  .host-status-badge.warned   { background: rgba(255,140,0,0.1); color: var(--high);     border: 1px solid rgba(255,140,0,0.2); }
+  .host-status-badge.clean    { background: rgba(76,175,136,0.1); color: var(--low);     border: 1px solid rgba(76,175,136,0.2); }
+
+  /* ── Engine status ───────────────────────────── */
+  .engine-status {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .engine-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-dim);
+  }
+
+  .engine-dot.online  { background: var(--low); }
+  .engine-dot.offline { background: var(--critical); }
+
+  /* ── Threat level banner ─────────────────────── */
+  #threat-banner {
+    display: none;
+    padding: 10px 32px;
+    background: rgba(255,59,59,0.08);
+    border-bottom: 1px solid rgba(255,59,59,0.2);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--critical);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: center;
+    animation: blink-bg 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink-bg {
+    0%, 100% { background: rgba(255,59,59,0.08); }
+    50%       { background: rgba(255,59,59,0.04); }
+  }
+
+  /* ── Scrollbar ───────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── Responsive ──────────────────────────────── */
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+    #status-bar { grid-template-columns: repeat(2, 1fr); }
+    aside { border-top: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-name">MAL<span style="color:var(--accent)">VISION</span></span>
+    <span class="logo-tag">Ransomware Monitor</span>
+  </div>
+  <div class="header-right">
+    <div class="live-indicator">
+      <div class="live-dot" id="live-dot"></div>
+      <span id="live-label">LIVE</span>
+    </div>
+    <div id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div id="threat-banner">⚠ ACTIVE THREAT DETECTED — IMMEDIATE ACTION REQUIRED</div>
+
+<div id="status-bar">
+  <div class="stat-cell">
+    <div class="stat-label">Total Alerts</div>
+    <div class="stat-value" id="stat-total">—</div>
+    <div class="stat-sub">all time</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Critical</div>
+    <div class="stat-value" id="stat-critical">—</div>
+    <div class="stat-sub">instant triggers</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Hosts Monitored</div>
+    <div class="stat-value" id="stat-hosts">—</div>
+    <div class="stat-sub">active endpoints</div>
+  </div>
+  <div class="stat-cell">
+    <div class="stat-label">Hosts at Risk</div>
+    <div class="stat-value" id="stat-risk">—</div>
+    <div class="stat-sub">score > threshold</div>
+  </div>
+</div>
+
+<main>
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Alert Feed</span>
+      <span class="panel-count" id="alert-count">0 alerts</span>
+    </div>
+    <div id="alert-feed">
+      <div class="empty-state">
+        <div class="empty-icon">◎</div>
+        <div>No alerts — system nominal</div>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="panel-header">
+      <span class="panel-title">Host Status</span>
+    </div>
+    <div class="engine-status">
+      <div class="engine-dot" id="engine-dot"></div>
+      <span id="engine-label">Connecting to engine...</span>
+    </div>
+    <div class="host-list" id="host-list">
+      <div class="empty-state" style="padding:40px 20px; font-size:11px;">
+        No hosts reporting yet
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+  // ── Config ─────────────────────────────────────────────────────────────────
+  const ENGINE = (window.ENGINE_URL || 'http://localhost:8000').replace(/\/$/, '');
+  const POLL_MS = 3000;
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let engineOnline = false;
+  let alerts = [];
+  let hosts  = [];
+
+  // ── Clock ──────────────────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('en-GB', { hour12: false }) + ' UTC+' +
+      (-now.getTimezoneOffset() / 60);
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  async function fetchAlerts() {
+    const r = await fetch(`${ENGINE}/alerts?limit=100`);
+    if (!r.ok) throw new Error('alerts failed');
+    const d = await r.json();
+    return d.alerts || [];
+  }
+
+  async function fetchStatus() {
+    const r = await fetch(`${ENGINE}/status`);
+    if (!r.ok) throw new Error('status failed');
+    const d = await r.json();
+    return d.hosts || [];
+  }
+
+  // ── Render alerts ──────────────────────────────────────────────────────────
+  function renderAlerts(data) {
+    const feed = document.getElementById('alert-feed');
+    const count = document.getElementById('alert-count');
+
+    if (!data.length) {
+      feed.innerHTML = `<div class="empty-state"><div class="empty-icon">◎</div><div>No alerts — system nominal</div></div>`;
+      count.textContent = '0 alerts';
+      return;
+    }
+
+    count.textContent = `${data.length} alert${data.length !== 1 ? 's' : ''}`;
+
+    feed.innerHTML = data.map(a => {
+      const ts  = new Date(a.timestamp);
+      const time = ts.toLocaleTimeString('en-GB', { hour12: false });
+      const date = ts.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+      const summary = a.summary
+        ? Object.entries(a.summary).map(([k,v]) => `${k}×${v}`).join(' · ')
+        : '';
+
+      return `
+        <div class="alert-item">
+          <div class="alert-bar ${a.level}"></div>
+          <div class="alert-body">
+            <div class="alert-top">
+              <span class="alert-level ${a.level}">${a.level}</span>
+              <span class="alert-type">${formatEventType(a.reason)}</span>
+              <span class="alert-host">${a.host}</span>
+            </div>
+            <div class="alert-reason">${a.reason}</div>
+            <div class="alert-meta">
+              <span>${date} ${time}</span>
+              ${a.score !== undefined ? `<span class="alert-score">score: ${a.score.toFixed(2)}</span>` : ''}
+              ${summary ? `<span>${summary}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function formatEventType(reason) {
+    if (!reason) return 'Unknown';
+    if (reason.includes('honeytoken')) return 'Honeytoken Hit';
+    if (reason.includes('vss'))        return 'VSS Deletion';
+    if (reason.includes('entropy'))    return 'Entropy Spike';
+    if (reason.includes('rename'))     return 'Rapid Rename';
+    if (reason.includes('lateral'))    return 'Lateral Movement';
+    if (reason.includes('ransom'))     return 'Ransom Note';
+    if (reason.includes('Threshold'))  return 'Score Threshold';
+    return reason.split(':')[0];
+  }
+
+  // ── Render hosts ───────────────────────────────────────────────────────────
+  function renderHosts(data) {
+    const list = document.getElementById('host-list');
+
+    if (!data.length) {
+      list.innerHTML = `<div class="empty-state" style="padding:40px 20px;font-size:11px;">No hosts reporting yet</div>`;
+      return;
+    }
+
+    list.innerHTML = data.map(h => {
+      const score   = h.score || 0;
+      const maxScore = 3.0;
+      const pct     = Math.min(100, (score / maxScore) * 100);
+      const barColor = h.alerted ? 'var(--critical)' : score > 1 ? 'var(--high)' : score > 0.3 ? 'var(--medium)' : 'var(--low)';
+      const badge    = h.alerted ? 'alerted' : h.warned ? 'warned' : 'clean';
+      const badgeLabel = h.alerted ? 'ALERT' : h.warned ? 'WARN' : 'CLEAN';
+      const events  = h.event_summary || {};
+      const tags    = Object.entries(events).map(([k,v]) => `<span class="event-tag">${k} ×${v}</span>`).join('');
+
+      return `
+        <div class="host-item">
+          <div class="host-name">${h.host}</div>
+          <span class="host-status-badge ${badge}">${badgeLabel}</span>
+          <div class="host-score-row">
+            <div class="score-bar-track">
+              <div class="score-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+            </div>
+            <div class="score-num">${score.toFixed(2)}</div>
+          </div>
+          <div class="host-events">${tags || '<span style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">no events</span>'}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Update stats bar ───────────────────────────────────────────────────────
+  function updateStats(alertData, hostData) {
+    const total    = alertData.length;
+    const critical = alertData.filter(a => a.level === 'CRITICAL').length;
+    const atRisk   = hostData.filter(h => h.alerted || h.warned).length;
+
+    document.getElementById('stat-total').textContent    = total;
+    document.getElementById('stat-critical').textContent = critical;
+    document.getElementById('stat-hosts').textContent    = hostData.length;
+    document.getElementById('stat-risk').textContent     = atRisk;
+
+    const critEl = document.getElementById('stat-critical');
+    critEl.className = 'stat-value' + (critical > 0 ? ' critical' : '');
+
+    const riskEl = document.getElementById('stat-risk');
+    riskEl.className = 'stat-value' + (atRisk > 0 ? ' warning' : '');
+
+    // Threat banner
+    const banner = document.getElementById('threat-banner');
+    banner.style.display = critical > 0 ? 'block' : 'none';
+
+    // Live dot
+    const dot = document.getElementById('live-dot');
+    dot.className = 'live-dot' + (critical > 0 ? ' alert' : '');
+  }
+
+  // ── Engine status ──────────────────────────────────────────────────────────
+  function setEngineStatus(online) {
+    const dot   = document.getElementById('engine-dot');
+    const label = document.getElementById('engine-label');
+    dot.className   = 'engine-dot ' + (online ? 'online' : 'offline');
+    label.textContent = online ? `Engine online · ${ENGINE}` : 'Engine unreachable';
+    engineOnline = online;
+  }
+
+  // ── Poll loop ──────────────────────────────────────────────────────────────
+  async function poll() {
+    try {
+      const [alertData, hostData] = await Promise.all([fetchAlerts(), fetchStatus()]);
+      setEngineStatus(true);
+      alerts = alertData;
+      hosts  = hostData;
+      renderAlerts(alerts);
+      renderHosts(hosts);
+      updateStats(alerts, hosts);
+    } catch (e) {
+      setEngineStatus(false);
+    }
+  }
+
+  poll();
+  setInterval(poll, POLL_MS);
+</script>
+
+</body>
+</html>

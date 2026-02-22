@@ -60,3 +60,14 @@
 2026-02-22 11:03:49,687 [INFO] [CRITICAL] honeytoken_hit | {'file_path': '/Users/macski/malvision-test/config.ini', 'access_type': 'write', 'note': 'Honeytoken modified — ransomware recon or encryption in progress'}
 2026-02-22 11:04:46,832 [INFO] Shutting down watcher...
 2026-02-22 11:04:46,833 [INFO] Watcher stopped.
+2026-02-22 15:57:03,438 [INFO] ============================================================
+2026-02-22 15:57:03,438 [INFO] MalVision Agent — watcher.py
+2026-02-22 15:57:03,438 [INFO] Host:        Macskis-MacBook-Pro.local
+2026-02-22 15:57:03,439 [INFO] Watch path:  /Users/macski/malvision-test
+2026-02-22 15:57:03,439 [INFO] Engine URL:  http://localhost:8000/events
+2026-02-22 15:57:03,439 [INFO] Honeytokens: 6 paths registered
+2026-02-22 15:57:03,439 [INFO] ============================================================
+2026-02-22 15:57:03,440 [INFO] Watching /Users/macski/malvision-test recursively...
+2026-02-22 15:57:24,335 [INFO] [CRITICAL] honeytoken_hit | {'file_path': '/Users/macski/malvision-test/config.ini', 'access_type': 'write', 'note': 'Honeytoken modified — ransomware recon or encryption in progress'}
+2026-02-22 16:00:09,643 [INFO] Shutting down watcher...
+2026-02-22 16:00:09,646 [INFO] Watcher stopped.
