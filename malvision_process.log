@@ -1,0 +1,18 @@
+2026-02-22 10:38:10,551 [INFO] ============================================================
+2026-02-22 10:38:10,551 [INFO] MalVision Agent — process_monitor.py
+2026-02-22 10:38:10,551 [INFO] Host:        Macskis-MacBook-Pro.local
+2026-02-22 10:38:10,551 [INFO] Engine URL:  http://localhost:8000/events
+2026-02-22 10:38:10,551 [INFO] Poll interval: 1.0s
+2026-02-22 10:38:10,552 [INFO] File open threshold: 50/s
+2026-02-22 10:38:10,552 [INFO] ============================================================
+2026-02-22 10:38:10,552 [INFO] Monitoring processes...
+2026-02-22 10:38:17,132 [INFO] [HIGH] rapid_file_opens | {'pid': 357, 'process_name': 'firefox', 'cmdline': '/Applications/Firefox.app/Contents/MacOS/firefox -psn_0_49164', 'files_per_second': 53.4, 'threshold': 50, 'note': 'Rapid file open rate — consistent with encryption loop'}
+2026-02-22 10:38:17,145 [WARNING] Engine unreachable — event queued locally
+2026-02-22 10:38:19,317 [INFO] [HIGH] rapid_file_opens | {'pid': 391, 'process_name': 'nsurlstoraged', 'cmdline': '/usr/libexec/nsurlstoraged', 'files_per_second': 54.0, 'threshold': 50, 'note': 'Rapid file open rate — consistent with encryption loop'}
+2026-02-22 10:38:19,322 [WARNING] Engine unreachable — event queued locally
+2026-02-22 10:38:20,485 [INFO] [HIGH] rapid_file_opens | {'pid': 5242, 'process_name': 'Obsidian', 'cmdline': '/Applications/Obsidian.app/Contents/MacOS/Obsidian', 'files_per_second': 52.0, 'threshold': 50, 'note': 'Rapid file open rate — consistent with encryption loop'}
+2026-02-22 10:38:20,488 [WARNING] Engine unreachable — event queued locally
+2026-02-22 10:38:48,476 [INFO] [CRITICAL] vss_deletion | {'pid': 8543, 'process_name': 'bash', 'cmdline': 'bash -c vssadmin delete shadows', 'matched_pattern': 'vssadmin', 'note': 'Shadow copy / backup deletion — classic ransomware pre-encryption step'}
+2026-02-22 10:38:48,479 [WARNING] Engine unreachable — event queued locally
+2026-02-22 10:46:15,007 [INFO] Shutting down process monitor...
+2026-02-22 10:46:15,008 [INFO] Process monitor stopped.

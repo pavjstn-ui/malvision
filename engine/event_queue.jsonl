@@ -1,0 +1,66 @@
+{
+  "host": "Macskis-MacBook-Pro.local",
+  "timestamp": "2026-02-22T09:31:37.335716+00:00",
+  "event_type": "honeytoken_hit",
+  "severity": "CRITICAL",
+  "payload": {
+    "file_path": "/Users/macski/malvision-test/config.ini",
+    "access_type": "write",
+    "note": "Honeytoken modified \u2014 ransomware recon or encryption in progress"
+  }
+}
+{
+  "host": "Macskis-MacBook-Pro.local",
+  "timestamp": "2026-02-22T09:38:17.132124+00:00",
+  "event_type": "rapid_file_opens",
+  "severity": "HIGH",
+  "payload": {
+    "pid": 357,
+    "process_name": "firefox",
+    "cmdline": "/Applications/Firefox.app/Contents/MacOS/firefox -psn_0_49164",
+    "files_per_second": 53.4,
+    "threshold": 50,
+    "note": "Rapid file open rate \u2014 consistent with encryption loop"
+  }
+}
+{
+  "host": "Macskis-MacBook-Pro.local",
+  "timestamp": "2026-02-22T09:38:19.317488+00:00",
+  "event_type": "rapid_file_opens",
+  "severity": "HIGH",
+  "payload": {
+    "pid": 391,
+    "process_name": "nsurlstoraged",
+    "cmdline": "/usr/libexec/nsurlstoraged",
+    "files_per_second": 54.0,
+    "threshold": 50,
+    "note": "Rapid file open rate \u2014 consistent with encryption loop"
+  }
+}
+{
+  "host": "Macskis-MacBook-Pro.local",
+  "timestamp": "2026-02-22T09:38:20.485339+00:00",
+  "event_type": "rapid_file_opens",
+  "severity": "HIGH",
+  "payload": {
+    "pid": 5242,
+    "process_name": "Obsidian",
+    "cmdline": "/Applications/Obsidian.app/Contents/MacOS/Obsidian",
+    "files_per_second": 52.0,
+    "threshold": 50,
+    "note": "Rapid file open rate \u2014 consistent with encryption loop"
+  }
+}
+{
+  "host": "Macskis-MacBook-Pro.local",
+  "timestamp": "2026-02-22T09:38:48.476382+00:00",
+  "event_type": "vss_deletion",
+  "severity": "CRITICAL",
+  "payload": {
+    "pid": 8543,
+    "process_name": "bash",
+    "cmdline": "bash -c vssadmin delete shadows",
+    "matched_pattern": "vssadmin",
+    "note": "Shadow copy / backup deletion \u2014 classic ransomware pre-encryption step"
+  }
+}
