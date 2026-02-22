@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+
+  engine:
+    build: .
+    container_name: malvision-engine
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Alert channels — set these in .env file, never commit credentials
+      - SPLUNK_HEC_URL=${SPLUNK_HEC_URL:-}
+      - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN:-}
+      - MALVISION_WEBHOOK_URL=${MALVISION_WEBHOOK_URL:-}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - ALERT_EMAIL_TO=${ALERT_EMAIL_TO:-}
+    volumes:
+      # Persist logs and event queue outside container
+      - ./data:/app/data
+    networks:
+      - malvision
+
+  # Nginx reverse proxy — handles TLS, exposes engine to agents securely
+  nginx:
+    image: nginx:alpine
+    container_name: malvision-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    depends_on:
+      - engine
+    networks:
+      - malvision
+
+networks:
+  malvision:
+    driver: bridge
